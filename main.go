@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/larikhide/k8s-go-app/config"
 	"github.com/larikhide/k8s-go-app/server"
 	"github.com/larikhide/k8s-go-app/version"
 	"log"
@@ -12,15 +13,26 @@ import (
 )
 
 func main() {
-	port := "8080"
+	launchMode := config.LaunchMode(os.Getenv("LAUNCH_MODE"))
+	if len(launchMode) == 0 {
+		launchMode = config.LocalEnv
+	}
+	log.Printf("LAUNCH MODE: %v", launchMode)
 
-	info := server.VersionInfo{
+	cfg, err := config.Load(launchMode, "./config")
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("CONFIG: %+v", cfg)
+
+
+		info := server.VersionInfo{
 		Version: version.Version,
 		Commit: version.Commit,
 		Build: version.Build,
 	}
 
-	srv := server.New(info, port)
+	srv := server.New(info, cfg.Port)
 	ctx, cancel := context.WithCancel(context.Background())
 	go func() {
 		err := srv.Serve(ctx)
